@@ -1,0 +1,11 @@
+alias: Kalenderevent_Update
+description: ""
+triggers:
+  - trigger: time_pattern
+    hours: "2"
+conditions: []
+actions:
+  - action: script.update_calendar_events
+    metadata: {}
+    data: {}
+mode: single

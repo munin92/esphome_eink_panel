@@ -1,0 +1,160 @@
+sequence:
+  - action: calendar.get_events
+    metadata: {}
+    data:
+      start_date_time: "{{ now().isoformat() }}"
+      end_date_time: "{{ (now() + timedelta(days=7)).isoformat() }}"
+    response_variable: calendar_events
+    target:
+      entity_id:
+        - calendar.example
+  - parallel:
+      - action: input_text.set_value
+        metadata: {}
+        data:
+          value: |2-
+              {% set ns = namespace(items=[]) %}
+              {% set now_ts = as_timestamp(now()) %}
+
+              {% for calendar_name, calendar_data in calendar_events.items() %}
+                {% for event in calendar_data["events"] %}
+                  {% set dt = as_datetime(event.start) %}
+                  {% if dt is not none %}
+                    {% set ts = as_timestamp(dt) %}
+                    {% if ts > now_ts %}
+                      {% if ":" in event.start %}
+                        {% set when = ts | timestamp_custom('%d.%m %H:%M') %}
+                      {% else %}
+                        {% set when = ts | timestamp_custom('%d.%m') %}
+                      {% endif %}
+                      {% set label = event.summary ~ " (" ~ when ~ ")" %}
+                      {% set ns.items = ns.items + [{'ts': ts, 'label': label}] %}
+                    {% endif %}
+                  {% endif %}
+                {% endfor %}
+              {% endfor %}
+
+              {% set sorted = ns.items | sort(attribute='ts') %}
+              {% if sorted | length > 0 %}
+                {{ sorted[0].label }}
+              {% else %}
+                Keine Termine
+              {% endif %}
+        target:
+          entity_id: input_text.next_event_1
+      - action: input_text.set_value
+        metadata: {}
+        data:
+          value: |
+            {% set ns = namespace(items=[]) %}
+            {% set now_ts = as_timestamp(now()) %}
+
+            {% for calendar_name, calendar_data in calendar_events.items() %}
+              {% for event in calendar_data["events"] %}
+                {% set dt = as_datetime(event.start) %}
+                {% if dt is not none %}
+                  {% set ts = as_timestamp(dt) %}
+                  {% if ts > now_ts %}
+                    {% if ":" in event.start %}
+                      {% set when = ts | timestamp_custom('%d.%m %H:%M') %}
+                    {% else %}
+                      {% set when = ts | timestamp_custom('%d.%m') %}
+                    {% endif %}
+                    {% set label = event.summary ~ " (" ~ when ~ ")" %}
+                    {% set ns.items = ns.items + [{'ts': ts, 'label': label}] %}
+                  {% endif %}
+                {% endif %}
+              {% endfor %}
+            {% endfor %}
+
+            {% set sorted = ns.items | sort(attribute='ts') %}
+
+            {# second event = index 1 #}
+            {% if sorted | length > 1 %}
+              {{ sorted[1].label }}
+            {% elif sorted | length == 1 %}
+              {{ sorted[0].label }}   {# Fallback: only one event exists #}
+            {% else %}
+              Keine Termine
+            {% endif %}
+        target:
+          entity_id: input_text.next_event_2
+      - action: input_text.set_value
+        metadata: {}
+        data:
+          value: |
+            {% set ns = namespace(items=[]) %}
+            {% set now_ts = as_timestamp(now()) %}
+
+            {# Sammeln aller Events aus allen Kalendern #}
+            {% for calendar_name, calendar_data in calendar_events.items() %}
+              {% for event in calendar_data["events"] %}
+                {% set dt = as_datetime(event.start) %}
+                {% if dt is not none %}
+                  {% set ts = as_timestamp(dt) %}
+                  {% if ts > now_ts %}
+                    {% if ":" in event.start %}
+                      {% set when = ts | timestamp_custom('%d.%m %H:%M') %}
+                    {% else %}
+                      {% set when = ts | timestamp_custom('%d.%m') %}
+                    {% endif %}
+                    {% set label = event.summary ~ " (" ~ when ~ ")" %}
+                    {% set ns.items = ns.items + [{'ts': ts, 'label': label}] %}
+                  {% endif %}
+                {% endif %}
+              {% endfor %}
+            {% endfor %}
+
+            {# Sortieren nach Timestamp #}
+            {% set sorted = ns.items | sort(attribute='ts') | list %}
+
+            {# Drittes Event = Index 2 #}
+            {% if sorted | length > 2 %}
+              {{ sorted[2].label }}
+            {% elif sorted | length > 0 %}
+              {{ sorted[-1].label }}   {# Fallback: letztes vorhandenes Event zeigen #}
+            {% else %}
+              Keine Termine
+            {% endif %}
+        target:
+          entity_id: input_text.next_event_3
+      - action: input_text.set_value
+        metadata: {}
+        data:
+          value: |
+            {% set ns = namespace(items=[]) %}
+            {% set now_ts = as_timestamp(now()) %}
+
+            {# collect from all calendars #}
+            {% for calendar_name, calendar_data in calendar_events.items() %}
+              {% for event in calendar_data["events"] %}
+                {% set dt = as_datetime(event.start) %}
+                {% if dt is not none %}
+                  {% set ts = as_timestamp(dt) %}
+                  {% if ts > now_ts %}
+                    {% if ":" in event.start %}
+                      {% set when = ts | timestamp_custom('%d.%m %H:%M') %}
+                    {% else %}
+                      {% set when = ts | timestamp_custom('%d.%m') %}
+                    {% endif %}
+                    {% set label = event.summary ~ " (" ~ when ~ ")" %}
+                    {% set ns.items = ns.items + [{'ts': ts, 'label': label}] %}
+                  {% endif %}
+                {% endif %}
+              {% endfor %}
+            {% endfor %}
+
+            {# sort and pick 4th (index 3) #}
+            {% set sorted = ns.items | sort(attribute='ts') | list %}
+
+            {% if sorted | length > 3 %}
+              {{ sorted[3].label }}   {# 4th event #}
+            {% elif sorted | length > 0 %}
+              {{ sorted[-1].label }}  {# fallback: show last available if <4 exist #}
+            {% else %}
+              Keine Termine
+            {% endif %}
+        target:
+          entity_id: input_text.next_event_4
+alias: Update Calendar Events
+description: ""

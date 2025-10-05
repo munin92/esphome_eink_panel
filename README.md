@@ -55,3 +55,7 @@ It displays **weather**, **calendar events**, and **status info** from **Home As
 
    ```bash
    pip install esphome
+
+## Home Assistant requierements
+
+Care about the instructions.md to setup Home Assistant Sensors correct.
