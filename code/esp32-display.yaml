@@ -1,0 +1,415 @@
+esphome:
+  name: esp32-display
+  friendly_name: ESP32 E-Paper Display
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+logger:
+  level: INFO
+
+api:
+  encryption:
+    key: "CHANGE_ME"
+
+ota:
+  - platform: esphome
+    password: "CHANGE_ME"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  ap:
+    ssid: !secret wifi_ssid_fallback
+    password: !secret wifi_password_fallback
+
+captive_portal:
+
+spi:
+  clk_pin: GPIO13
+  mosi_pin: GPIO14
+
+time:
+  - platform: homeassistant
+    id: ha_time
+    timezone: Europe/Berlin
+
+deep_sleep:
+  id: deep_sleep_control
+  run_duration: 90s
+  sleep_duration: 60min
+
+# Sensors from Home Assistant
+sensor:
+  # Current outdoor temperature from Balkon sensor
+  - platform: homeassistant
+    id: temp_current
+    entity_id: sensor.0x00158d000588a46d_temperature
+    internal: true
+  
+  # AccuWeather specific sensors
+  - platform: homeassistant
+    id: weather_humidity
+    entity_id: weather.home
+    attribute: humidity
+    internal: true
+    
+  - platform: homeassistant
+    id: weather_uv
+    entity_id: sensor.home_uv_index_tag_0
+    internal: true
+    
+  - platform: homeassistant
+    id: weather_wind
+    entity_id: sensor.home_windgeschwindigkeit_tag_0
+    internal: true
+  
+  # Additional AccuWeather sensors for warnings  
+  - platform: homeassistant
+    id: weather_thunderstorm_prob
+    entity_id: sensor.home_gewitterwahrscheinlichkeit_tag_0
+    internal: true
+  
+  # Today's min/max from AccuWeather
+  - platform: homeassistant
+    id: weather_temp_today_max
+    entity_id: sensor.home_realfeel_temperatur_max_tag_0
+    internal: true
+    
+  - platform: homeassistant
+    id: weather_temp_today_min
+    entity_id: sensor.home_realfeel_temperatur_min_tag_0
+    internal: true
+  
+  # Tomorrow forecast
+  - platform: homeassistant
+    id: weather_temp_tomorrow_max
+    entity_id: sensor.home_realfeel_temperatur_max_tag_1
+    internal: true
+    
+  - platform: homeassistant
+    id: weather_temp_tomorrow_min
+    entity_id: sensor.home_realfeel_temperatur_min_tag_1
+    internal: true
+
+text_sensor:
+  # Today's weather condition
+  - platform: homeassistant
+    id: weather_condition
+    entity_id: sensor.home_bedingung_tag_0
+    internal: true
+    
+  # Tomorrow's weather condition
+  - platform: homeassistant
+    id: weather_condition_tomorrow
+    entity_id: sensor.home_bedingung_tag_1
+    internal: true
+    
+  # Air quality
+  - platform: homeassistant
+    id: weather_air_quality
+    entity_id: sensor.home_luftqualitat_tag_0
+    internal: true
+    
+  # Calendar events from your 4 text entities
+  - platform: homeassistant
+    id: calendar_event_1
+    entity_id: input_text.next_event_1
+    internal: true
+    
+  - platform: homeassistant
+    id: calendar_event_2
+    entity_id: input_text.next_event_2
+    internal: true
+    
+  - platform: homeassistant
+    id: calendar_event_3
+    entity_id: input_text.next_event_3
+    internal: true
+    
+  - platform: homeassistant
+    id: calendar_event_4
+    entity_id: input_text.next_event_4
+    internal: true
+
+# Fonts (mit besserer Unicode-Unterstützung)
+font:
+  - file: "gfonts://Noto Sans"
+    id: font_title
+    size: 58
+    
+  - file: "gfonts://Noto Sans"
+    id: font_header
+    size: 28
+    
+  - file: "gfonts://Noto Sans"
+    id: font_large
+    size: 26
+    
+  - file: "gfonts://Noto Sans"
+    id: font_medium
+    size: 24          # vorher 22
+
+  - file: "gfonts://Noto Sans"
+    id: font_regular
+    size: 20          # vorher 18
+
+  - file: "gfonts://Noto Sans"
+    id: font_small
+    size: 18          # vorher 16
+
+  - file: "gfonts://Noto Sans"
+    id: font_tiny
+    size: 16          # vorher 14
+    
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: icons_huge
+    size: 120
+    glyphs:
+      - "\U000F0590"  # cloudy
+      - "\U000F0591"  # fog
+      - "\U000F0595"  # partly-cloudy
+      - "\U000F0596"  # pouring
+      - "\U000F0597"  # rainy
+      - "\U000F0598"  # snowy
+      - "\U000F059A"  # sunny
+      - "\U000F0594"  # clear-night
+      - "\U000F059E"  # windy
+      - "\U000F0593"  # lightning
+      
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: icons_medium
+    size: 56
+    glyphs:
+      - "\U000F0590"
+      - "\U000F0591"
+      - "\U000F0595"
+      - "\U000F0596"
+      - "\U000F0597"
+      - "\U000F0598"
+      - "\U000F059A"
+      - "\U000F0594"
+      - "\U000F059E"
+      - "\U000F0593"
+
+# Display
+display:
+  - platform: waveshare_epaper
+    id: epd
+    cs_pin:
+      number: GPIO15
+      ignore_strapping_warning: true
+    dc_pin: GPIO27
+    busy_pin:
+      number: GPIO25
+      inverted: true
+    reset_pin: GPIO26
+    model: 7.30in-f
+    rotation: 0°
+    update_interval: 60s
+    lambda: |-
+      // 7 available colors for Waveshare 7.3" F
+      const auto BLACK   = Color(0,   0,   0,   0);
+      const auto RED     = Color(255, 0,   0,   0);
+      const auto GREEN   = Color(0,   255, 0,   0);
+      const auto BLUE    = Color(0,   0,   255, 0);
+      const auto YELLOW  = Color(255, 255, 0,   0);
+      const auto ORANGE  = Color(255, 127, 0,   0);
+      const auto WHITE   = Color(255, 255, 255, 0);
+      const auto GRAY    = Color(120, 120, 120, 0);
+      
+      // 800x480 layout
+      int w = it.get_width();  // 800
+      int h = it.get_height(); // 480
+      
+      it.fill(WHITE);
+      
+      // === COMPACT HEADER (single line) ===
+      it.filled_rectangle(0, 0, w, 72, WHITE);
+      it.filled_rectangle(0, 68, w, 3, BLUE);
+      
+      auto time_now = id(ha_time).now();
+      const char* weekdays[] = {"Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"};
+      const char* months[] = {"", "Jan", "Feb", "Mär", "Apr", "Mai", "Jun", 
+                              "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"};
+      
+      // Single line with day and date
+      it.printf(20, 25, id(font_header), BLACK, "%s, %d. %s %d", 
+                weekdays[time_now.day_of_week-1], 
+                time_now.day_of_month, 
+                months[time_now.month], 
+                time_now.year);
+      
+      // === WETTER SEKTION (ohne Rahmen, sauberer) ===
+      int weather_x = 20;
+      int weather_y = 88;
+      int weather_w = 380;
+      
+      // Weather icon mapping functions
+      auto weather_icon = [](std::string c) -> const char* {
+        std::string cond = c;
+        for (auto &ch : cond) ch = tolower(ch);
+        
+        if (cond.find("sonnenschein") != std::string::npos || 
+            cond.find("klar") != std::string::npos) return "\U000F059A";
+        if (cond.find("stellenweise wolken") != std::string::npos ||
+            cond.find("teilweise wolkig") != std::string::npos ||
+            cond.find("aufklarend") != std::string::npos) return "\U000F0595";
+        if (cond.find("bewölkt") != std::string::npos ||
+            cond.find("wolkig") != std::string::npos) return "\U000F0590";
+        if (cond.find("schauer") != std::string::npos ||
+            cond.find("regen") != std::string::npos) return "\U000F0597";
+        if (cond.find("nebel") != std::string::npos) return "\U000F0591";
+        return "\U000F0590";
+      };
+      
+      auto icon_color = [&](std::string c) -> Color {
+        std::string cond = c;
+        for (auto &ch : cond) ch = tolower(ch);
+        
+        if (cond.find("sonnenschein") != std::string::npos || 
+            cond.find("klar") != std::string::npos) return ORANGE;
+        if (cond.find("schauer") != std::string::npos ||
+            cond.find("regen") != std::string::npos) return BLUE;
+        if (cond.find("gewitter") != std::string::npos) return YELLOW;
+        return BLACK;
+      };
+      
+      // Subtiler Hintergrund statt Rahmen
+      it.filled_rectangle(weather_x, weather_y, weather_w, 240, Color(250, 250, 250, 0));
+      // Farbakzent oben
+      it.filled_rectangle(weather_x, weather_y, weather_w, 4, BLUE);
+      
+      std::string cond = id(weather_condition).state;
+      Color today_color = icon_color(cond);
+      
+      // Großes Wettersymbol (zentriert oben)
+      it.print(weather_x + (weather_w/2) - 60, weather_y + 15, id(icons_huge), today_color, weather_icon(cond));
+      
+      // Aktuelle Temperatur (groß, zentriert)
+      it.printf(weather_x + (weather_w/2), weather_y + 150, id(font_title), today_color, TextAlign::CENTER, "%.1f°", id(temp_current).state);
+      
+      // Min/Max (zentriert unter aktueller Temperatur)
+      float temp_max = id(weather_temp_today_max).state;
+      float temp_min = id(weather_temp_today_min).state;
+      if (!isnan(temp_max) && !isnan(temp_min)) {
+        it.printf(weather_x + (weather_w/2), weather_y + 190, id(font_large), GRAY, TextAlign::CENTER, "%.0f° / %.0f°", temp_min, temp_max);
+      }
+      
+      // Warnung (unten links)
+      if (id(weather_thunderstorm_prob).state > 30.0) {
+        it.printf(weather_x + 15, weather_y + 220, id(font_small), YELLOW, "Gewitter: %.0f%%", id(weather_thunderstorm_prob).state);
+      } else if (id(weather_wind).state > 25.0) {
+        it.printf(weather_x + 15, weather_y + 220, id(font_small), RED, "Wind: %.0f km/h", id(weather_wind).state);
+      } else if (id(weather_humidity).state > 80.0) {
+        it.printf(weather_x + 15, weather_y + 220, id(font_small), BLUE, "Luftfeuchte: %.0f%%", id(weather_humidity).state);
+      } else if (id(weather_uv).state > 7.0) {
+        it.printf(weather_x + 15, weather_y + 220, id(font_small), RED, "UV-Index: %.0f", id(weather_uv).state);
+      }
+      
+      // === VORHERSAGE (saubere Trennung) ===
+      int forecast_y = weather_y + 255;
+      // Trennlinie statt Rahmen
+      it.filled_rectangle(weather_x, forecast_y - 10, weather_w, 2, ORANGE);
+      
+      it.printf(weather_x + 15, forecast_y + 10, id(font_large), BLACK, "Morgen");
+      
+      float temp_tom_max = id(weather_temp_tomorrow_max).state;
+      float temp_tom_min = id(weather_temp_tomorrow_min).state;
+      if (!isnan(temp_tom_max) && !isnan(temp_tom_min)) {
+        std::string forecast_tomorrow = id(weather_condition_tomorrow).state;
+        Color tom_color = icon_color(forecast_tomorrow);
+        
+        // Tomorrow icon
+        it.print(weather_x + weather_w - 60, forecast_y + 5, id(icons_medium), tom_color, weather_icon(forecast_tomorrow));
+        
+        // Tomorrow min/max
+        it.printf(weather_x + 15, forecast_y + 40, id(font_large), tom_color, "%.0f° / %.0f°", temp_tom_min, temp_tom_max);
+      }
+      
+      // === KALENDER (moderne Karten ohne Rahmen) ===
+      int cal_x = weather_x + weather_w + 30;
+      int cal_w = w - cal_x - 20;
+      int cal_y = weather_y;
+      
+      // Kopfzeile
+      it.printf(cal_x + 10, cal_y + 20, id(font_header), BLACK, "Termine");
+      // Akzentlinie unter Überschrift
+      it.filled_rectangle(cal_x + 10, cal_y + 50, 100, 3, GREEN);
+      
+      int event_y = cal_y + 70;
+      bool has_events = false;
+      
+      // Event 1 - moderne Karte
+      if (id(calendar_event_1).state.length() > 0 && 
+          id(calendar_event_1).state != "Keine Termine" && 
+          id(calendar_event_1).state != "" &&
+          id(calendar_event_1).state != "off" && 
+          id(calendar_event_1).state != "unavailable") {
+        // Subtiler Hintergrund
+        it.filled_rectangle(cal_x + 5, event_y, cal_w - 15, 35, Color(255, 248, 240, 0));
+        // Farbakzent links
+        it.filled_rectangle(cal_x + 5, event_y, 4, 35, ORANGE);
+        it.printf(cal_x + 20, event_y + 12, id(font_regular), BLACK, "%s", id(calendar_event_1).state.c_str());
+        event_y += 45;
+        has_events = true;
+      }
+      
+      // Event 2
+      if (id(calendar_event_2).state.length() > 0 && 
+          id(calendar_event_2).state != "Keine weiteren Termine" && 
+          id(calendar_event_2).state != "" && 
+          id(calendar_event_2).state != "off" && 
+          id(calendar_event_2).state != "unavailable") {
+        it.filled_rectangle(cal_x + 5, event_y, cal_w - 15, 35, Color(240, 248, 255, 0));
+        it.filled_rectangle(cal_x + 5, event_y, 4, 35, BLUE);
+        it.printf(cal_x + 20, event_y + 12, id(font_regular), BLACK, "%s", id(calendar_event_2).state.c_str());
+        event_y += 45;
+        has_events = true;
+      }
+      
+      // Event 3
+      if (id(calendar_event_3).state.length() > 0 && 
+          id(calendar_event_3).state != "Keine weiteren Termine" && 
+          id(calendar_event_3).state != "" && 
+          id(calendar_event_3).state != "off" && 
+          id(calendar_event_3).state != "unavailable") {
+        it.filled_rectangle(cal_x + 5, event_y, cal_w - 15, 35, Color(255, 240, 240, 0));
+        it.filled_rectangle(cal_x + 5, event_y, 4, 35, RED);
+        it.printf(cal_x + 20, event_y + 12, id(font_regular), BLACK, "%s", id(calendar_event_3).state.c_str());
+        event_y += 45;
+        has_events = true;
+      }
+      
+      // Event 4
+      if (id(calendar_event_4).state.length() > 0 && 
+          id(calendar_event_4).state != "Keine weiteren Termine" && 
+          id(calendar_event_4).state != "" && 
+          id(calendar_event_4).state != "off" && 
+          id(calendar_event_4).state != "unavailable") {
+        it.filled_rectangle(cal_x + 5, event_y, cal_w - 15, 35, Color(255, 255, 240, 0));
+        it.filled_rectangle(cal_x + 5, event_y, 4, 35, YELLOW);
+        it.printf(cal_x + 20, event_y + 12, id(font_regular), BLACK, "%s", id(calendar_event_4).state.c_str());
+        event_y += 45;
+        has_events = true;
+      }
+      
+      if (!has_events) {
+        it.printf(cal_x + 10, event_y, id(font_regular), GRAY, "Keine Termine");
+      }
+      
+      // === FOOTER (minimalistisch) ===
+      int footer_y = h - 35;
+      // Nur dünne Linie oben
+      it.filled_rectangle(0, footer_y, w, 1, GRAY);
+      it.strftime(w/2, footer_y + 18, id(font_tiny), GRAY, TextAlign::CENTER,
+                  "Zuletzt aktualisiert: %H:%M", id(ha_time).now());
+
+button:
+  - platform: template
+    name: "Display aktualisieren"
+    on_press:
+      - component.update: epd
